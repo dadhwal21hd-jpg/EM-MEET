@@ -43,12 +43,15 @@ function rowAccent(row) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, valueColor = 'text-gray-900' }) {
+function StatCard({ label, value, sub, valueColor = 'text-gray-900' }) {
   const isText = typeof value === 'string' && value.length > 4
   return (
     <div className="bg-white rounded-xl border border-gray-200 px-4 py-4 flex flex-col justify-between min-w-0">
-      <div className={`font-bold leading-none truncate ${isText ? 'text-sm text-gray-700' : `text-2xl ${valueColor}`}`}>
-        {value ?? '—'}
+      <div className="flex items-baseline gap-1.5 min-w-0">
+        <span className={`font-bold leading-none truncate ${isText ? 'text-sm text-gray-700' : `text-2xl ${valueColor}`}`}>
+          {value ?? '—'}
+        </span>
+        {sub && <span className="text-xs text-gray-400 shrink-0">{sub}</span>}
       </div>
       <div className="text-xs text-gray-400 mt-2 leading-tight">{label}</div>
     </div>
@@ -148,7 +151,10 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
   const totals = data?.totals?.[tab] ?? null
 
   const stats = useMemo(() => {
-    const totalFires    = allRows.reduce((s, r) => s + r.active_lots_count, 0)
+    // Delayed step rows across the tab. Buckets are disjoint, so summing the
+    // per-bucket step lists counts each step row exactly once. This is a step
+    // count, NOT a lot count — the two differ and must stay labelled apart.
+    const totalSteps    = allRows.reduce((s, r) => s + (r.active_lots?.length ?? 0), 0)
     const peopleOnFire  = allRows.filter(r => r.active_lots_count > 0).length
     const criticalCount = allRows.reduce((s, r) => s + (r.critical_count || 0), 0)
     const freq = {}
@@ -158,7 +164,7 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
       }
     })
     const topStep = Object.entries(freq).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
-    return { totalFires, peopleOnFire, criticalCount, topStep }
+    return { totalSteps, peopleOnFire, criticalCount, topStep }
   }, [allRows])
 
   const rows = useMemo(() => {
@@ -246,9 +252,10 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
         {data && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
-              label="Active fires"
-              value={stats.totalFires}
-              valueColor={stats.totalFires > 0 ? 'text-red-600' : 'text-gray-300'}
+              label="Active lots (delayed)"
+              value={totals?.active_lots ?? 0}
+              sub={`${stats.totalSteps} steps`}
+              valueColor={(totals?.active_lots ?? 0) > 0 ? 'text-red-600' : 'text-gray-300'}
             />
             <StatCard
               label={tab === 'doers' ? 'Doers with fires' : 'Vendors with fires'}

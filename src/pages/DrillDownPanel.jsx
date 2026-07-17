@@ -17,6 +17,9 @@ const fmtDate = (d) => {
 
 function plural(n, w) { return `${n} ${w}${n !== 1 ? 's' : ''}` }
 
+// Pieces are summed over distinct lots by the backend; null qty counts as 0.
+function pcs(n) { return (n ?? 0).toLocaleString() }
+
 // Parse "3d 2h (Delayed)" → total fractional days
 function parseDelayDays(raw) {
   if (!raw) return 0
@@ -323,10 +326,20 @@ export default function DrillDownPanel({ name, tab, daysBack, onBack }) {
                 <>
                   <span className="text-gray-300">·</span>
                   <span className={row.active_lots_count > 0 ? 'text-red-600 font-medium' : ''}>
-                    {plural(row.active_lots_count, 'active lot')}
+                    {plural(row.active_lots_count, 'active lot')} · {pcs(row.active_pieces)} pcs
                   </span>
                   <span className="text-gray-300">·</span>
-                  <span>{plural(row.history_lots_count, 'history lot')}</span>
+                  <span>
+                    {plural(row.history_lots_count, 'history lot')} · {pcs(row.history_pieces)} pcs
+                  </span>
+                  {row.active_lots_unknown_qty > 0 && (
+                    <span
+                      className="text-amber-600"
+                      title={`${plural(row.active_lots_unknown_qty, 'active lot')} missing a qty; counted as 0 pcs`}
+                    >
+                      ⚠ {row.active_lots_unknown_qty} no qty
+                    </span>
+                  )}
                 </>
               )}
               <span className="text-gray-300 hidden sm:inline">· Press Esc to go back</span>
@@ -350,8 +363,9 @@ export default function DrillDownPanel({ name, tab, daysBack, onBack }) {
             {/* Metric cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <MetricCard
-                label="Active lots"
+                label={`Active lots · ${pcs(row.active_pieces)} pcs`}
                 value={row.active_lots_count}
+                sub={plural(row.active_lots.length, 'step')}
                 valueColor={row.active_lots_count > 0 ? 'text-red-600' : 'text-gray-300'}
               />
               <MetricCard
@@ -383,7 +397,7 @@ export default function DrillDownPanel({ name, tab, daysBack, onBack }) {
                   Active fires
                 </h2>
                 <span className="text-xs text-gray-400">
-                  {plural(row.active_lots_count, 'lot')}
+                  {plural(row.active_lots_count, 'lot')} · {pcs(row.active_pieces)} pcs
                   {row.active_lots.length !== row.active_lots_count
                     ? ` · ${plural(row.active_lots.length, 'step')}`
                     : ''}
@@ -408,7 +422,7 @@ export default function DrillDownPanel({ name, tab, daysBack, onBack }) {
                   History
                 </h2>
                 <span className="text-xs text-gray-400">
-                  {plural(row.history_lots_count, 'lot')}
+                  {plural(row.history_lots_count, 'lot')} · {pcs(row.history_pieces)} pcs
                   {row.history_lots.length !== row.history_lots_count
                     ? ` · ${plural(row.history_lots.length, 'step')}`
                     : ''}

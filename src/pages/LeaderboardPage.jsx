@@ -31,6 +31,8 @@ function timeAgo(ts) {
   return `${Math.floor(s / 3600)}h ago`
 }
 
+function plural(n, w) { return `${n} ${w}${n !== 1 ? 's' : ''}` }
+
 function rowAccent(row) {
   if (row.active_lots_count === 0) return ''
   const d = row.max_delay_days || 0
@@ -141,6 +143,10 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
 
   const allRows = tab === 'doers' ? (data?.doers ?? []) : (data?.vendors ?? [])
 
+  // Report-wide totals for the current tab. Comes from the backend rather than
+  // summing the rows: a lot delayed under two doers is one lot, not two.
+  const totals = data?.totals?.[tab] ?? null
+
   const stats = useMemo(() => {
     const totalFires    = allRows.reduce((s, r) => s + r.active_lots_count, 0)
     const peopleOnFire  = allRows.filter(r => r.active_lots_count > 0).length
@@ -190,6 +196,23 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
             <h1 className="text-base font-semibold text-gray-900 leading-tight">Delay Report</h1>
             <p className="text-xs text-gray-400">Who&apos;s holding up lots</p>
           </div>
+
+          {totals && (
+            <div className="text-xs text-gray-500 border-l border-gray-200 pl-4 hidden sm:block">
+              <span className="font-medium text-gray-900">
+                {plural(totals.active_lots, 'lot')} · {totals.active_pieces.toLocaleString()} pcs
+              </span>
+              <span className="text-gray-400"> active</span>
+              {totals.active_lots_unknown_qty > 0 && (
+                <span
+                  className="ml-1.5 text-amber-600"
+                  title={`${plural(totals.active_lots_unknown_qty, 'lot')} missing a qty; counted as 0 pcs`}
+                >
+                  ⚠ {totals.active_lots_unknown_qty} no qty
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex-1" />
 
@@ -428,6 +451,19 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
                               <span className="ml-2 text-xs text-red-500 font-medium">
                                 {row.critical_count} critical
                               </span>
+                            )}
+                            {row.active_lots_count > 0 && (
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                {plural(row.active_lots_count, 'lot')} · {(row.active_pieces ?? 0).toLocaleString()} pcs
+                                {row.active_lots_unknown_qty > 0 && (
+                                  <span
+                                    className="ml-1.5 text-amber-600"
+                                    title={`${plural(row.active_lots_unknown_qty, 'lot')} missing a qty; counted as 0 pcs`}
+                                  >
+                                    ⚠ {row.active_lots_unknown_qty} no qty
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </td>
 

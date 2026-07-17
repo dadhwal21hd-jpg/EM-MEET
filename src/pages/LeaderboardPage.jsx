@@ -33,6 +33,9 @@ function timeAgo(ts) {
 
 function plural(n, w) { return `${n} ${w}${n !== 1 ? 's' : ''}` }
 
+// A real 0 and a missing field must not look alike — see DrillDownPanel.pcs.
+function pcs(n) { return n == null ? '—' : n.toLocaleString() }
+
 function rowAccent(row) {
   if (row.active_lots_count === 0) return ''
   const d = row.max_delay_days || 0
@@ -206,7 +209,7 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
           {totals && (
             <div className="text-xs text-gray-500 border-l border-gray-200 pl-4 hidden sm:block">
               <span className="font-medium text-gray-900">
-                {plural(totals.active_lots, 'lot')} · {totals.active_pieces.toLocaleString()} pcs
+                {plural(totals.active_lots, 'lot')} · {pcs(totals.active_pieces)} pcs
               </span>
               <span className="text-gray-400"> active</span>
               {totals.active_lots_unknown_qty > 0 && (
@@ -253,7 +256,7 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
               label="Active lots (delayed)"
-              value={totals?.active_lots ?? 0}
+              value={totals ? totals.active_lots : '—'}
               sub={`${stats.totalSteps} steps`}
               valueColor={(totals?.active_lots ?? 0) > 0 ? 'text-red-600' : 'text-gray-300'}
             />
@@ -461,7 +464,7 @@ export default function LeaderboardPage({ daysBack, onDaysBackChange, onDrillDow
                             )}
                             {row.active_lots_count > 0 && (
                               <div className="text-xs text-gray-400 mt-0.5">
-                                {plural(row.active_lots_count, 'lot')} · {(row.active_pieces ?? 0).toLocaleString()} pcs
+                                {plural(row.active_lots_count, 'lot')} · {pcs(row.active_pieces)} pcs
                                 {row.active_lots_unknown_qty > 0 && (
                                   <span
                                     className="ml-1.5 text-amber-600"

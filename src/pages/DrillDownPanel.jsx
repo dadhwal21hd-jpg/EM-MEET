@@ -18,7 +18,9 @@ const fmtDate = (d) => {
 function plural(n, w) { return `${n} ${w}${n !== 1 ? 's' : ''}` }
 
 // Pieces are summed over distinct lots by the backend; null qty counts as 0.
-function pcs(n) { return (n ?? 0).toLocaleString() }
+// A real 0 and a missing field must not look alike: an absent active_pieces
+// (backend too old to send it) renders '—', never a confident '0'.
+function pcs(n) { return n == null ? '—' : n.toLocaleString() }
 
 // Parse "3d 2h (Delayed)" → total fractional days
 function parseDelayDays(raw) {
